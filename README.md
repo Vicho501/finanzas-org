@@ -38,15 +38,26 @@ finanzas-org/
 
 ## Fases de desarrollo
 
-- [ ] Fase 1: Configuración base (Electron + SQLite + navegación)
-- [ ] Fase 2: Cuentas y movimientos (CRUD completo)
-- [ ] Fase 3: Dashboard y categorías
+- [x] Fase 1: Configuración base (Electron + SQLite + navegación)
+- [x] Fase 2: Cuentas y movimientos (CRUD completo)
+- [x] Fase 3: Dashboard y categorías
 - [ ] Fase 4: Reportes y exportación
 - [ ] Fase 5: Pulido y distribución
 
-## Cómo ejecutar (próximamente)
+## Cómo ejecutar
 
 ```bash
 npm install
 npm run dev
+```
+
+> `npm install` ejecuta `electron-builder install-app-deps` (postinstall), que descarga el
+> binario de `better-sqlite3` compilado para Electron. Si la instalación falla compilando
+> `better-sqlite3` para Node, usa `npm install --ignore-scripts` y luego
+> `npx electron-builder install-app-deps`.
+
+Build de producción (instalador en `release/`):
+
+```bash
+npm run build
 ```

@@ -1,0 +1,24 @@
+/// <reference types="vite/client" />
+
+interface Window {
+  api: {
+    getCuentas: () => Promise<any[]>
+    createCuenta: (data: any) => Promise<{ id: number }>
+    updateCuenta: (id: number, data: any) => Promise<{ ok: boolean }>
+    archiveCuenta: (id: number) => Promise<{ ok: boolean }>
+    getMovimientos: (filtros?: any) => Promise<any[]>
+    createMovimiento: (data: any) => Promise<{ id: number }>
+    updateMovimiento: (id: number, data: any) => Promise<{ ok: boolean }>
+    deleteMovimiento: (id: number) => Promise<{ ok: boolean }>
+    getCategorias: () => Promise<any[]>
+    createCategoria: (data: any) => Promise<{ id: number }>
+    updateCategoria: (id: number, data: any) => Promise<{ ok: boolean }>
+    getCategoriasConUso: () => Promise<any[]>
+    setCategoriaActiva: (id: number, activa: boolean) => Promise<{ ok: boolean }>
+    getDashboard: () => Promise<any>
+    getReporteMensual: (mes: number, anio: number) => Promise<any>
+    exportReporte: (mes: number, anio: number, formato: 'pdf' | 'excel') => Promise<any>
+    getConfig: (clave: string) => Promise<string | null>
+    setConfig: (clave: string, valor: string) => Promise<{ ok: boolean }>
+  }
+}
