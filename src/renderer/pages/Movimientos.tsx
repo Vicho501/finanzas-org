@@ -9,6 +9,7 @@ interface Movimiento {
   id: number
   cuenta_id: number
   cuenta_nombre: string
+  moneda: string
   categoria_id: number | null
   tipo: 'ingreso' | 'egreso'
   monto: number
@@ -257,7 +258,7 @@ export default function Movimientos() {
                     )}
                   </td>
                   <td className={`px-4 py-3 text-right font-mono font-semibold text-sm ${mov.tipo === 'ingreso' ? 'text-income' : 'text-expense'}`}>
-                    {mov.tipo === 'ingreso' ? '+' : '−'}{formatMonto(mov.monto)}
+                    {mov.tipo === 'ingreso' ? '+' : '−'}{formatMonto(mov.monto, mov.moneda)}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity justify-end">

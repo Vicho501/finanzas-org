@@ -6,7 +6,7 @@ export function registerMovimientoHandlers() {
 
   ipcMain.handle('movimientos:getAll', (_e, filtros: any = {}) => {
     let query = `
-      SELECT m.*, c.nombre as cuenta_nombre, cat.nombre as categoria_nombre, cat.icono, cat.color
+      SELECT m.*, c.nombre as cuenta_nombre, c.moneda, cat.nombre as categoria_nombre, cat.icono, cat.color
       FROM movimiento m
       JOIN cuenta_bancaria c ON c.id = m.cuenta_id
       LEFT JOIN categoria cat ON cat.id = m.categoria_id

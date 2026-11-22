@@ -2,27 +2,36 @@ import Database from 'better-sqlite3'
 import path from 'path'
 import { app } from 'electron'
 
-let db: Database.Database
+let db: Database.Database | null = null
+
+export function getDbPath(): string {
+  return path.join(app.getPath('userData'), 'finanzas.db')
+}
 
 export function getDb(): Database.Database {
   if (!db) throw new Error('Base de datos no inicializada')
   return db
 }
 
+export function closeDatabase(): void {
+  db?.close()
+  db = null
+}
+
 export function initDatabase(): void {
-  const dbPath = path.join(app.getPath('userData'), 'finanzas.db')
-  db = new Database(dbPath)
+  const conn = new Database(getDbPath())
+  db = conn
 
   // Habilitar WAL para mejor rendimiento
-  db.pragma('journal_mode = WAL')
-  db.pragma('foreign_keys = ON')
+  conn.pragma('journal_mode = WAL')
+  conn.pragma('foreign_keys = ON')
 
   createTables()
   seedCategorias()
 }
 
 function createTables(): void {
-  db.exec(`
+  getDb().exec(`
     CREATE TABLE IF NOT EXISTS cuenta_bancaria (
       id          INTEGER PRIMARY KEY AUTOINCREMENT,
       nombre      TEXT    NOT NULL,
@@ -75,6 +84,7 @@ function createTables(): void {
 }
 
 function seedCategorias(): void {
+  const db = getDb()
   const count = db.prepare('SELECT COUNT(*) as n FROM categoria').get() as { n: number }
   if (count.n > 0) return
 

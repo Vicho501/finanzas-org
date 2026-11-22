@@ -130,12 +130,14 @@ export function getReporteMensual(mes: number, anio: number): ReporteMensual {
   }
 }
 
+// Negativos como "-$1.234" (Intl es-CL produce "$-1.234")
 export function formatMonto(monto: number, moneda = 'CLP'): string {
-  return new Intl.NumberFormat('es-CL', {
+  const texto = new Intl.NumberFormat('es-CL', {
     style: 'currency', currency: moneda,
     minimumFractionDigits: moneda === 'CLP' ? 0 : 2,
     maximumFractionDigits: moneda === 'CLP' ? 0 : 2,
-  }).format(monto)
+  }).format(Math.abs(monto))
+  return monto < 0 && texto.replace(/[^1-9]/g, '') !== '' ? '-' + texto : texto
 }
 
 export function formatFecha(fecha: string): string {

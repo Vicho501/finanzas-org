@@ -5,13 +5,14 @@ import Spinner from '../components/Spinner'
 import EmptyState from '../components/EmptyState'
 
 interface Resumen {
+  monedaBase: string
   cuentas: { id: number; nombre: string; banco: string; moneda: string; saldo_actual: number }[]
   mes: { ingresos: number; egresos: number; cantidad: number }
   historico: { periodo: string; ingresos: number; egresos: number }[]
   topEgresos: { nombre: string; icono: string; color: string; total: number }[]
   ultimos: {
     id: number; tipo: 'ingreso' | 'egreso'; monto: number; fecha: string
-    descripcion: string | null; cuenta_nombre: string; categoria_nombre: string | null; icono: string | null
+    descripcion: string | null; cuenta_nombre: string; moneda: string; categoria_nombre: string | null; icono: string | null
   }[]
 }
 
@@ -24,7 +25,7 @@ export default function Dashboard() {
     <div className="p-8 max-w-6xl">
       <div className="mb-6">
         <h1 className="font-serif text-2xl text-gray-900">Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-1">Resumen financiero de <span className="capitalize">{NOMBRE_MES}</span></p>
+        <p className="text-sm text-gray-500 mt-1">Resumen financiero de {NOMBRE_MES}</p>
       </div>
 
       {loading && <Spinner />}
@@ -45,9 +46,10 @@ export default function Dashboard() {
 }
 
 function Contenido({ data }: { data: Resumen }) {
-  // Solo se consolidan cuentas en CLP; las demás monedas se muestran aparte por cuenta
-  const saldoTotal = data.cuentas.filter(c => c.moneda === 'CLP').reduce((s, c) => s + c.saldo_actual, 0)
-  const hayOtrasMonedas = data.cuentas.some(c => c.moneda !== 'CLP')
+  // Solo se consolidan cuentas en la moneda base; las demás se muestran aparte por cuenta
+  const base = data.monedaBase
+  const saldoTotal = data.cuentas.filter(c => c.moneda === base).reduce((s, c) => s + c.saldo_actual, 0)
+  const hayOtrasMonedas = data.cuentas.some(c => c.moneda !== base)
   const balanceMes = data.mes.ingresos - data.mes.egresos
 
   return (
@@ -56,16 +58,17 @@ function Contenido({ data }: { data: Resumen }) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="card px-5 py-4 bg-primary-800 border-primary-800">
           <p className="text-xs font-semibold uppercase tracking-wide text-primary-200">Saldo consolidado</p>
-          <p className="font-mono text-xl font-semibold text-white mt-1">{formatMonto(saldoTotal)}</p>
+          <p className="font-mono text-xl font-semibold text-white mt-1">{formatMonto(saldoTotal, base)}</p>
           <p className="text-xs text-primary-300 mt-0.5">
-            {data.cuentas.length} cuenta{data.cuentas.length !== 1 ? 's' : ''}{hayOtrasMonedas ? ' · solo CLP' : ''}
+            {data.cuentas.length} cuenta{data.cuentas.length !== 1 ? 's' : ''}{hayOtrasMonedas ? ` · solo ${base}` : ''}
           </p>
         </div>
-        <Kpi titulo="Ingresos del mes" valor={data.mes.ingresos} clase="text-income" />
-        <Kpi titulo="Egresos del mes" valor={data.mes.egresos} clase="text-expense" />
+        <Kpi titulo="Ingresos del mes" valor={data.mes.ingresos} moneda={base} clase="text-income" />
+        <Kpi titulo="Egresos del mes" valor={data.mes.egresos} moneda={base} clase="text-expense" />
         <Kpi
           titulo="Balance del mes"
           valor={balanceMes}
+          moneda={base}
           clase={balanceMes >= 0 ? 'text-income' : 'text-expense'}
           nota={`${data.mes.cantidad} movimiento${data.mes.cantidad !== 1 ? 's' : ''}`}
         />
@@ -80,7 +83,7 @@ function Contenido({ data }: { data: Resumen }) {
               <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-expense" />Egresos</span>
             </div>
           </div>
-          <GraficoBarras historico={data.historico} />
+          <GraficoBarras historico={data.historico} moneda={base} />
         </div>
 
         <div className="card p-5">
@@ -88,7 +91,7 @@ function Contenido({ data }: { data: Resumen }) {
           {data.topEgresos.length === 0 ? (
             <p className="text-sm text-gray-400">Sin egresos este mes</p>
           ) : (
-            <TopEgresos items={data.topEgresos} total={data.mes.egresos} />
+            <TopEgresos items={data.topEgresos} total={data.mes.egresos} moneda={base} />
           )}
         </div>
       </div>
@@ -133,7 +136,7 @@ function Contenido({ data }: { data: Resumen }) {
                     <p className="text-xs text-gray-400">{formatFecha(m.fecha)} · {m.cuenta_nombre}</p>
                   </div>
                   <p className={`font-mono text-sm font-semibold ${m.tipo === 'ingreso' ? 'text-income' : 'text-expense'}`}>
-                    {m.tipo === 'ingreso' ? '+' : '−'}{formatMonto(m.monto)}
+                    {m.tipo === 'ingreso' ? '+' : '−'}{formatMonto(m.monto, m.moneda)}
                   </p>
                 </div>
               ))}
@@ -145,17 +148,17 @@ function Contenido({ data }: { data: Resumen }) {
   )
 }
 
-function Kpi({ titulo, valor, clase, nota }: { titulo: string; valor: number; clase: string; nota?: string }) {
+function Kpi({ titulo, valor, moneda, clase, nota }: { titulo: string; valor: number; moneda: string; clase: string; nota?: string }) {
   return (
     <div className="card px-5 py-4">
       <p className="label">{titulo}</p>
-      <p className={`font-mono text-xl font-semibold ${clase}`}>{formatMonto(valor)}</p>
+      <p className={`font-mono text-xl font-semibold ${clase}`}>{formatMonto(valor, moneda)}</p>
       {nota && <p className="text-xs text-gray-400 mt-0.5">{nota}</p>}
     </div>
   )
 }
 
-function GraficoBarras({ historico }: { historico: Resumen['historico'] }) {
+function GraficoBarras({ historico, moneda }: { historico: Resumen['historico']; moneda: string }) {
   const max = Math.max(1, ...historico.flatMap(h => [h.ingresos, h.egresos]))
   const ALTO = 180
 
@@ -170,8 +173,8 @@ function GraficoBarras({ historico }: { historico: Resumen['historico'] }) {
         ))}
         {historico.map(h => (
           <div key={h.periodo} className="relative flex-1 flex items-end justify-center gap-1 h-full">
-            <Barra valor={h.ingresos} max={max} clase="bg-income" titulo={`Ingresos ${formatPeriodoCorto(h.periodo)}: ${formatMonto(h.ingresos)}`} />
-            <Barra valor={h.egresos} max={max} clase="bg-expense" titulo={`Egresos ${formatPeriodoCorto(h.periodo)}: ${formatMonto(h.egresos)}`} />
+            <Barra valor={h.ingresos} max={max} clase="bg-income" titulo={`Ingresos ${formatPeriodoCorto(h.periodo)}: ${formatMonto(h.ingresos, moneda)}`} />
+            <Barra valor={h.egresos} max={max} clase="bg-expense" titulo={`Egresos ${formatPeriodoCorto(h.periodo)}: ${formatMonto(h.egresos, moneda)}`} />
           </div>
         ))}
       </div>
@@ -195,7 +198,7 @@ function Barra({ valor, max, clase, titulo }: { valor: number; max: number; clas
   )
 }
 
-function TopEgresos({ items, total }: { items: Resumen['topEgresos']; total: number }) {
+function TopEgresos({ items, total, moneda }: { items: Resumen['topEgresos']; total: number; moneda: string }) {
   return (
     <div className="space-y-3">
       {items.map(it => {
@@ -209,7 +212,7 @@ function TopEgresos({ items, total }: { items: Resumen['topEgresos']; total: num
             <div className="h-1.5 bg-surface-100 rounded-full overflow-hidden">
               <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: it.color }} />
             </div>
-            <p className="font-mono text-xs text-gray-400 mt-0.5">{formatMonto(it.total)}</p>
+            <p className="font-mono text-xs text-gray-400 mt-0.5">{formatMonto(it.total, moneda)}</p>
           </div>
         )
       })}

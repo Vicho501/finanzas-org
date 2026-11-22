@@ -37,4 +37,11 @@ contextBridge.exposeInMainWorld('api', {
   // Config
   getConfig: (clave: string) => ipcRenderer.invoke('config:get', clave),
   setConfig: (clave: string, valor: string) => ipcRenderer.invoke('config:set', clave, valor),
+
+  // Sistema y respaldos
+  getSistemaInfo: () => ipcRenderer.invoke('sistema:info'),
+  crearRespaldo: () => ipcRenderer.invoke('respaldo:crear'),
+  prepararRestauracion: (nombreAuto?: string) => ipcRenderer.invoke('respaldo:prepararRestauracion', nombreAuto),
+  confirmarRestauracion: () => ipcRenderer.invoke('respaldo:confirmarRestauracion'),
+  abrirCarpetaRespaldos: () => ipcRenderer.invoke('respaldo:abrirCarpeta'),
 })

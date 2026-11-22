@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
+import { EVENTO_CONFIG } from '../utils/eventos'
 
 const navItems = [
   { to: '/dashboard',     icon: '📊', label: 'Dashboard' },
@@ -10,6 +12,17 @@ const navItems = [
 ]
 
 export default function Layout() {
+  const [organizacion, setOrganizacion] = useState('')
+  const [version, setVersion] = useState('')
+
+  useEffect(() => {
+    const cargar = () => window.api.getConfig('nombre_organizacion').then(n => setOrganizacion(n ?? ''))
+    cargar()
+    window.api.getSistemaInfo().then(i => setVersion(i.version)).catch(() => {})
+    window.addEventListener(EVENTO_CONFIG, cargar)
+    return () => window.removeEventListener(EVENTO_CONFIG, cargar)
+  }, [])
+
   return (
     <div className="flex h-full bg-surface-100">
       {/* Sidebar */}
@@ -20,9 +33,9 @@ export default function Layout() {
             <div className="w-8 h-8 bg-primary-800 rounded-lg flex items-center justify-center text-white text-sm font-bold">
               F
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="font-semibold text-gray-900 text-sm leading-tight">FinanzasOrg</p>
-              <p className="text-xs text-gray-400">Gestión financiera</p>
+              <p className="text-xs text-gray-400 truncate" title={organizacion}>{organizacion || 'Gestión financiera'}</p>
             </div>
           </div>
         </div>
@@ -48,7 +61,7 @@ export default function Layout() {
 
         {/* Footer sidebar */}
         <div className="px-5 py-4 border-t border-surface-200">
-          <p className="text-xs text-gray-400">v0.1.0 — local</p>
+          <p className="text-xs text-gray-400">{version ? `v${version} · ` : ''}datos locales</p>
         </div>
       </aside>
 

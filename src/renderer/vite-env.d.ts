@@ -24,5 +24,18 @@ interface Window {
     quitarReporteDelHistorial: (id: number) => Promise<{ ok: boolean }>
     getConfig: (clave: string) => Promise<string | null>
     setConfig: (clave: string, valor: string) => Promise<{ ok: boolean }>
+    getSistemaInfo: () => Promise<{
+      version: string
+      rutaBaseDatos: string
+      carpetaRespaldos: string
+      respaldosAuto: { nombre: string; ruta: string; tamano: number; fecha: string }[]
+    }>
+    crearRespaldo: () => Promise<{ ok: boolean; cancelado?: boolean; mensaje?: string; ruta?: string }>
+    prepararRestauracion: (nombreAuto?: string) => Promise<
+      | { ok: true; archivo: string; cuentas: number; movimientos: number }
+      | { ok: false; cancelado?: boolean; mensaje?: string }
+    >
+    confirmarRestauracion: () => Promise<{ ok: boolean; mensaje?: string }>
+    abrirCarpetaRespaldos: () => Promise<{ ok: boolean }>
   }
 }
