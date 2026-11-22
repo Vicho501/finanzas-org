@@ -29,6 +29,10 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.invoke('reportes:getMensual', mes, anio),
   exportReporte: (mes: number, anio: number, formato: 'pdf' | 'excel') =>
     ipcRenderer.invoke('reportes:export', mes, anio, formato),
+  getHistorialReportes: () => ipcRenderer.invoke('reportes:getHistorial'),
+  abrirReporte: (id: number) => ipcRenderer.invoke('reportes:abrir', id),
+  mostrarReporteEnCarpeta: (id: number) => ipcRenderer.invoke('reportes:mostrarEnCarpeta', id),
+  quitarReporteDelHistorial: (id: number) => ipcRenderer.invoke('reportes:quitarDelHistorial', id),
 
   // Config
   getConfig: (clave: string) => ipcRenderer.invoke('config:get', clave),

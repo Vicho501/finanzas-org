@@ -17,7 +17,11 @@ interface Window {
     setCategoriaActiva: (id: number, activa: boolean) => Promise<{ ok: boolean }>
     getDashboard: () => Promise<any>
     getReporteMensual: (mes: number, anio: number) => Promise<any>
-    exportReporte: (mes: number, anio: number, formato: 'pdf' | 'excel') => Promise<any>
+    exportReporte: (mes: number, anio: number, formato: 'pdf' | 'excel') => Promise<{ ok: boolean; cancelado?: boolean; mensaje?: string; id?: number; ruta?: string }>
+    getHistorialReportes: () => Promise<any[]>
+    abrirReporte: (id: number) => Promise<{ ok: boolean; mensaje?: string }>
+    mostrarReporteEnCarpeta: (id: number) => Promise<{ ok: boolean; mensaje?: string }>
+    quitarReporteDelHistorial: (id: number) => Promise<{ ok: boolean }>
     getConfig: (clave: string) => Promise<string | null>
     setConfig: (clave: string, valor: string) => Promise<{ ok: boolean }>
   }

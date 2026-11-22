@@ -41,7 +41,7 @@ finanzas-org/
 - [x] Fase 1: Configuración base (Electron + SQLite + navegación)
 - [x] Fase 2: Cuentas y movimientos (CRUD completo)
 - [x] Fase 3: Dashboard y categorías
-- [ ] Fase 4: Reportes y exportación
+- [x] Fase 4: Reportes y exportación
 - [ ] Fase 5: Pulido y distribución
 
 ## Cómo ejecutar
