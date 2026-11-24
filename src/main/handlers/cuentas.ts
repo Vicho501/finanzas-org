@@ -42,4 +42,9 @@ export function registerCuentaHandlers() {
     db().prepare('UPDATE cuenta_bancaria SET activa = 0 WHERE id = ?').run(id)
     return { ok: true }
   })
+
+  ipcMain.handle('cuentas:restore', (_e, id: number) => {
+    db().prepare('UPDATE cuenta_bancaria SET activa = 1 WHERE id = ?').run(id)
+    return { ok: true }
+  })
 }

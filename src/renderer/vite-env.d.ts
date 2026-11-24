@@ -6,6 +6,7 @@ interface Window {
     createCuenta: (data: any) => Promise<{ id: number }>
     updateCuenta: (id: number, data: any) => Promise<{ ok: boolean }>
     archiveCuenta: (id: number) => Promise<{ ok: boolean }>
+    restoreCuenta: (id: number) => Promise<{ ok: boolean }>
     getMovimientos: (filtros?: any) => Promise<any[]>
     createMovimiento: (data: any) => Promise<{ id: number }>
     updateMovimiento: (id: number, data: any) => Promise<{ ok: boolean }>

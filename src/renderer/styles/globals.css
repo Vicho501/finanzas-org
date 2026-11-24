@@ -12,59 +12,90 @@
     padding: 0;
   }
   body {
-    @apply bg-surface-100 text-gray-900 font-sans;
+    @apply bg-surface-100 text-ink font-sans text-sm;
     -webkit-font-smoothing: antialiased;
   }
   * {
     @apply box-border;
   }
+  /* Foco visible solo al usar teclado */
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2 ring-offset-white;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+  }
 }
 
 @layer components {
   /* Scrollbar sutil */
-  ::-webkit-scrollbar       { width: 6px; height: 6px; }
+  ::-webkit-scrollbar       { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track { @apply bg-transparent; }
   ::-webkit-scrollbar-thumb { @apply bg-surface-300 rounded-full; }
   ::-webkit-scrollbar-thumb:hover { @apply bg-surface-400; }
 
-  /* Tarjeta base */
+  /* Cifras alineadas en columnas */
+  .cifra {
+    font-variant-numeric: tabular-nums;
+    @apply font-semibold;
+  }
+
   .card {
-    @apply bg-white border border-surface-200 rounded-lg;
+    @apply bg-white border border-surface-200 rounded-xl;
   }
 
-  /* Botón primario */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 font-semibold px-4 py-2.5 rounded-lg
+           transition-colors text-sm whitespace-nowrap
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
   .btn-primary {
-    @apply bg-primary-800 hover:bg-primary-900 text-white font-medium
-           px-4 py-2 rounded-lg transition-colors text-sm
-           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary-800;
+    @apply btn bg-primary-800 hover:bg-primary-900 text-white disabled:hover:bg-primary-800;
   }
-
-  /* Botón secundario */
   .btn-secondary {
-    @apply bg-surface-100 hover:bg-surface-200 text-gray-700 font-medium
-           border border-surface-300 px-4 py-2 rounded-lg transition-colors text-sm
-           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-surface-100;
+    @apply btn bg-white hover:bg-surface-100 text-ink border border-surface-300 disabled:hover:bg-white;
+  }
+  .btn-danger {
+    @apply btn bg-expense hover:bg-[#962c25] text-white disabled:hover:bg-expense;
+  }
+  .btn-income {
+    @apply btn bg-income hover:bg-[#156440] text-white;
+  }
+  .btn-expense {
+    @apply btn bg-expense hover:bg-[#962c25] text-white;
+  }
+  /* Acción pequeña dentro de filas: siempre visible, con texto */
+  .btn-fila {
+    @apply inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold text-primary-800
+           hover:bg-primary-50 transition-colors;
+  }
+  .btn-fila-peligro {
+    @apply btn-fila text-expense hover:bg-expense-light;
   }
 
-  /* Badge ingreso */
   .badge-income {
-    @apply bg-income-light text-income font-medium text-xs px-2 py-0.5 rounded-full;
+    @apply bg-income-light text-income font-semibold text-xs px-2 py-0.5 rounded-full;
   }
-
-  /* Badge egreso */
   .badge-expense {
-    @apply bg-expense-light text-expense font-medium text-xs px-2 py-0.5 rounded-full;
+    @apply bg-expense-light text-expense font-semibold text-xs px-2 py-0.5 rounded-full;
   }
 
-  /* Input base */
   .input {
-    @apply w-full border border-surface-300 rounded-lg px-3 py-2 text-sm
+    @apply w-full border border-surface-300 rounded-lg px-3 py-2.5 text-sm text-ink bg-white
+           placeholder:text-surface-500
            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
-           bg-white;
+           disabled:bg-surface-50 disabled:text-surface-500;
   }
 
-  /* Label */
   .label {
-    @apply block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1;
+    @apply block text-sm font-semibold text-ink mb-1.5;
+  }
+  .ayuda {
+    @apply text-xs text-surface-500 mt-1.5;
+  }
+
+  /* Títulos de sección dentro de una tarjeta */
+  .titulo-seccion {
+    @apply text-base font-semibold text-ink;
   }
 }

@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useApi } from '../hooks/useApi'
-import Modal from '../components/Modal'
 import Spinner from '../components/Spinner'
+import { Encabezado, ErrorFormulario, Modal, useUI } from '../components/UI'
+import { avisarCambioDatos } from '../utils/eventos'
 
 type TipoCategoria = 'ingreso' | 'egreso' | 'ambos'
 
@@ -22,21 +23,22 @@ interface FormCategoria {
   icono: string
 }
 
-const SECCIONES: { tipo: TipoCategoria; titulo: string }[] = [
-  { tipo: 'ingreso', titulo: 'Ingresos' },
-  { tipo: 'egreso', titulo: 'Egresos' },
-  { tipo: 'ambos', titulo: 'Ingresos y egresos' },
+const SECCIONES: { tipo: TipoCategoria; titulo: string; boton: string; ayuda: string }[] = [
+  { tipo: 'ingreso', titulo: 'Para ingresos', boton: 'Ingresos', ayuda: 'De dónde viene el dinero' },
+  { tipo: 'egreso', titulo: 'Para gastos', boton: 'Gastos', ayuda: 'En qué se gasta' },
+  { tipo: 'ambos', titulo: 'Para ingresos y gastos', boton: 'Ambos', ayuda: 'Sirven en los dos casos, como traspasos o ajustes' },
 ]
 
-const COLORES = ['#2d7a5b', '#8b2e2e', '#245d84', '#7a6020', '#6b4c9a', '#b4562a', '#3f7f8c', '#5b5b5b']
+const COLORES = ['#1c7a4e', '#b4372f', '#1e4d6b', '#8a5a00', '#6b4c9a', '#b4562a', '#2f7f8c', '#5b6670']
 const ICONOS = ['💰', '🤝', '🏛️', '↩️', '➕', '👥', '🏢', '💡', '📦', '🚗', '🔧', '🏦', '➖', '🔄', '📋', '🎓', '🍽️', '💻', '📣', '⚖️', '🩺', '🎁']
 
 const COLOR_POR_TIPO: Record<TipoCategoria, string> = {
-  ingreso: '#2d7a5b', egreso: '#8b2e2e', ambos: '#7a6020',
+  ingreso: '#1c7a4e', egreso: '#b4372f', ambos: '#8a5a00',
 }
 
 export default function Categorias() {
-  const { data: categorias, loading, reload } = useApi<Categoria[]>(() => window.api.getCategoriasConUso())
+  const { confirmar, avisar } = useUI()
+  const { data: categorias, loading } = useApi<Categoria[]>(() => window.api.getCategoriasConUso())
   const [modal, setModal] = useState<'nueva' | 'editar' | null>(null)
   const [editando, setEditando] = useState<Categoria | null>(null)
   const [form, setForm] = useState<FormCategoria>({ nombre: '', tipo: 'egreso', color: COLOR_POR_TIPO.egreso, icono: '📋' })
@@ -68,11 +70,11 @@ export default function Categorias() {
 
   async function guardar() {
     const nombre = form.nombre.trim()
-    if (!nombre) { setError('El nombre es obligatorio'); return }
+    if (!nombre) { setError('Escribe un nombre para la categoría.'); return }
     const duplicada = categorias?.some(c =>
       c.id !== editando?.id && c.nombre.toLowerCase() === nombre.toLowerCase()
     )
-    if (duplicada) { setError('Ya existe una categoría con ese nombre'); return }
+    if (duplicada) { setError(`Ya existe una categoría llamada "${nombre}". Usa otro nombre.`); return }
 
     setGuardando(true)
     setError(null)
@@ -80,22 +82,35 @@ export default function Categorias() {
       const payload = { ...form, nombre }
       if (modal === 'nueva') await window.api.createCategoria(payload)
       else if (editando) await window.api.updateCategoria(editando.id, payload)
+      avisar(modal === 'nueva' ? `Categoría "${nombre}" creada` : 'Cambios guardados')
       cerrarModal()
-      reload()
+      avisarCambioDatos()
     } catch (e: any) {
-      setError(e?.message ?? 'Error al guardar')
+      setError(e?.message ?? 'No se pudo guardar la categoría.')
     } finally {
       setGuardando(false)
     }
   }
 
   async function cambiarActiva(cat: Categoria, activa: boolean) {
-    if (!activa && !confirm(
-      `¿Archivar "${cat.nombre}"? No aparecerá al registrar movimientos nuevos, ` +
-      `pero los ${cat.total_movimientos} movimiento(s) existentes la conservan.`
-    )) return
+    if (!activa) {
+      const ok = await confirmar({
+        titulo: `¿Archivar "${cat.nombre}"?`,
+        mensaje: <>
+          <p>Ya no aparecerá al anotar movimientos nuevos.</p>
+          {cat.total_movimientos > 0 && (
+            <p className="mt-2 text-surface-500">
+              Los {cat.total_movimientos} movimientos que ya la usan la conservan. Puedes restaurarla cuando quieras.
+            </p>
+          )}
+        </>,
+        confirmar: 'Archivar categoría',
+      })
+      if (!ok) return
+    }
     await window.api.setCategoriaActiva(cat.id, activa)
-    reload()
+    avisar(activa ? `"${cat.nombre}" restaurada` : `"${cat.nombre}" archivada`)
+    avisarCambioDatos()
   }
 
   // Cambiar el tipo de una categoría en uso podría dejar movimientos con una categoría incompatible
@@ -104,56 +119,55 @@ export default function Categorias() {
     form.tipo !== editando.tipo && form.tipo !== 'ambos'
 
   return (
-    <div className="p-8 max-w-4xl">
-      <div className="flex items-start justify-between mb-6">
-        <div>
-          <h1 className="font-serif text-2xl text-gray-900">Categorías</h1>
-          <p className="text-sm text-gray-500 mt-1">Personaliza las categorías de movimientos</p>
-        </div>
-        <button className="btn-primary" onClick={() => abrirNueva()}>+ Nueva categoría</button>
-      </div>
+    <div className="px-10 py-9 max-w-4xl">
+      <Encabezado
+        titulo="Categorías"
+        descripcion="Agrupan los movimientos para saber de dónde viene el dinero y en qué se gasta. Aparecen en el inicio y en los reportes."
+        acciones={<button className="btn-primary" onClick={() => abrirNueva()}>+ Nueva categoría</button>}
+      />
 
       {loading && <Spinner />}
 
       {!loading && (
-        <div className="space-y-6">
+        <div className="space-y-8">
           {SECCIONES.map(sec => {
             const items = activas.filter(c => c.tipo === sec.tipo)
             return (
               <section key={sec.tipo}>
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                    {sec.titulo} <span className="text-gray-300">({items.length})</span>
-                  </h2>
-                  <button
-                    className="text-xs text-primary-700 hover:text-primary-900"
-                    onClick={() => abrirNueva(sec.tipo)}
-                  >+ Agregar</button>
+                <div className="flex items-end justify-between mb-3">
+                  <div>
+                    <h2 className="titulo-seccion">{sec.titulo}</h2>
+                    <p className="text-sm text-surface-500">{sec.ayuda}</p>
+                  </div>
+                  <button className="btn-fila" onClick={() => abrirNueva(sec.tipo)}>+ Agregar aquí</button>
                 </div>
                 {items.length === 0 ? (
-                  <div className="card px-5 py-4 text-sm text-gray-400">Sin categorías de este tipo</div>
+                  <div className="card px-5 py-4 text-sm text-surface-500">Todavía no hay categorías de este tipo.</div>
                 ) : (
-                  <div className="card divide-y divide-surface-100">
+                  <ul className="card divide-y divide-surface-100">
                     {items.map(cat => (
-                      <div key={cat.id} className="px-4 py-3 flex items-center gap-3 group hover:bg-surface-50">
+                      <li key={cat.id} className="px-4 py-3 flex items-center gap-3">
                         <span
-                          className="w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0"
+                          className="w-10 h-10 rounded-lg flex items-center justify-center text-lg flex-shrink-0"
                           style={{ backgroundColor: cat.color + '1f' }}
+                          aria-hidden
                         >{cat.icono}</span>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-800 truncate">{cat.nombre}</p>
-                          <p className="text-xs text-gray-400">
-                            {cat.total_movimientos} movimiento{cat.total_movimientos !== 1 ? 's' : ''}
+                          <p className="font-semibold text-ink truncate">{cat.nombre}</p>
+                          <p className="text-xs text-surface-500">
+                            {cat.total_movimientos === 0
+                              ? 'Sin usar todavía'
+                              : `Usada en ${cat.total_movimientos} movimiento${cat.total_movimientos !== 1 ? 's' : ''}`}
                           </p>
                         </div>
-                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => abrirEditar(cat)} className="p-1.5 rounded text-gray-400 hover:bg-surface-200" title="Editar">✏️</button>
-                          <button onClick={() => cambiarActiva(cat, false)} className="p-1.5 rounded text-gray-400 hover:bg-surface-200" title="Archivar">📁</button>
+                        <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} aria-hidden />
+                        <div className="flex gap-1">
+                          <button onClick={() => abrirEditar(cat)} className="btn-fila">Editar</button>
+                          <button onClick={() => cambiarActiva(cat, false)} className="btn-fila text-surface-500">Archivar</button>
                         </div>
-                      </div>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 )}
               </section>
             )
@@ -161,20 +175,18 @@ export default function Categorias() {
 
           {archivadas.length > 0 && (
             <details>
-              <summary className="text-xs font-semibold uppercase tracking-wide text-gray-400 cursor-pointer hover:text-gray-600">
+              <summary className="text-sm font-semibold text-surface-500 cursor-pointer hover:text-ink select-none">
                 Categorías archivadas ({archivadas.length})
               </summary>
-              <div className="card mt-3 divide-y divide-surface-100">
+              <ul className="card mt-3 divide-y divide-surface-100">
                 {archivadas.map(cat => (
-                  <div key={cat.id} className="px-4 py-2.5 flex items-center gap-3">
-                    <span className="opacity-50">{cat.icono}</span>
-                    <p className="flex-1 text-sm text-gray-500">{cat.nombre}</p>
-                    <button className="text-xs text-primary-700 hover:text-primary-900" onClick={() => cambiarActiva(cat, true)}>
-                      Restaurar
-                    </button>
-                  </div>
+                  <li key={cat.id} className="px-4 py-2.5 flex items-center gap-3">
+                    <span className="opacity-50" aria-hidden>{cat.icono}</span>
+                    <p className="flex-1 text-sm text-surface-500">{cat.nombre}</p>
+                    <button className="btn-fila" onClick={() => cambiarActiva(cat, true)}>Restaurar</button>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </details>
           )}
         </div>
@@ -182,19 +194,21 @@ export default function Categorias() {
 
       {modal && (
         <Modal titulo={modal === 'nueva' ? 'Nueva categoría' : 'Editar categoría'} onClose={cerrarModal}>
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
+          <form className="space-y-5" onSubmit={e => { e.preventDefault(); guardar() }}>
+            <div className="flex items-end gap-3">
               <span
                 className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
                 style={{ backgroundColor: form.color + '1f' }}
+                aria-hidden
               >{form.icono}</span>
               <div className="flex-1">
-                <label className="label">Nombre *</label>
+                <label className="label" htmlFor="cat-nombre">Nombre</label>
                 <input
+                  id="cat-nombre"
                   className="input"
-                  placeholder="ej: Capacitaciones"
+                  placeholder="ej: Cuotas sociales, Arriendo de la sede"
                   value={form.nombre}
-                  onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}
+                  onChange={e => { setForm(f => ({ ...f, nombre: e.target.value })); setError(null) }}
                   maxLength={40}
                   autoFocus
                 />
@@ -202,36 +216,41 @@ export default function Categorias() {
             </div>
 
             <div>
-              <label className="label">Tipo</label>
+              <p className="label">¿Para qué movimientos sirve?</p>
               <div className="grid grid-cols-3 gap-2">
                 {SECCIONES.map(s => (
                   <button
                     key={s.tipo}
+                    type="button"
+                    aria-pressed={form.tipo === s.tipo}
                     onClick={() => setForm(f => ({ ...f, tipo: s.tipo }))}
-                    className={`py-2 rounded-lg text-xs font-medium border transition-colors ${
+                    className={`py-2.5 rounded-lg text-sm font-semibold border transition-colors ${
                       form.tipo === s.tipo
                         ? 'bg-primary-800 text-white border-primary-800'
-                        : 'bg-white text-gray-500 border-surface-300 hover:border-surface-400'
+                        : 'bg-white text-ink border-surface-300 hover:border-surface-400'
                     }`}
-                  >{s.titulo}</button>
+                  >{s.boton}</button>
                 ))}
               </div>
               {cambioTipoRiesgoso && (
-                <p className="text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-lg mt-2">
-                  Esta categoría ya tiene {editando!.total_movimientos} movimiento(s). Cambiar su tipo puede dejar
-                  algunos de ellos con una categoría que no corresponde.
+                <p className="text-sm text-caution bg-caution-light px-3 py-2.5 rounded-lg mt-2">
+                  Esta categoría ya se usa en {editando!.total_movimientos} movimiento(s). Si cambias el tipo, algunos
+                  podrían quedar con una categoría que no corresponde.
                 </p>
               )}
             </div>
 
             <div>
-              <label className="label">Ícono</label>
+              <p className="label">Ícono</p>
               <div className="grid grid-cols-11 gap-1">
                 {ICONOS.map(ic => (
                   <button
                     key={ic}
+                    type="button"
+                    aria-label={`Ícono ${ic}`}
+                    aria-pressed={form.icono === ic}
                     onClick={() => setForm(f => ({ ...f, icono: ic }))}
-                    className={`h-8 rounded-lg text-base transition-colors ${
+                    className={`h-9 rounded-lg text-lg transition-colors ${
                       form.icono === ic ? 'bg-primary-100 ring-2 ring-primary-500' : 'hover:bg-surface-100'
                     }`}
                   >{ic}</button>
@@ -240,31 +259,33 @@ export default function Categorias() {
             </div>
 
             <div>
-              <label className="label">Color</label>
+              <p className="label">Color</p>
               <div className="flex gap-2">
                 {COLORES.map(col => (
                   <button
                     key={col}
+                    type="button"
+                    aria-label={`Color ${col}`}
+                    aria-pressed={form.color === col}
                     onClick={() => setForm(f => ({ ...f, color: col }))}
-                    className={`w-7 h-7 rounded-full transition-transform ${
-                      form.color === col ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : ''
+                    className={`w-8 h-8 rounded-full transition-transform ${
+                      form.color === col ? 'ring-2 ring-offset-2 ring-ink scale-110' : ''
                     }`}
                     style={{ backgroundColor: col }}
-                    title={col}
                   />
                 ))}
               </div>
             </div>
 
-            {error && <p className="text-xs text-expense bg-expense-light px-3 py-2 rounded-lg">{error}</p>}
+            <ErrorFormulario texto={error} />
 
-            <div className="flex justify-end gap-2 pt-2">
-              <button className="btn-secondary" onClick={cerrarModal}>Cancelar</button>
-              <button className="btn-primary" onClick={guardar} disabled={guardando}>
+            <div className="flex justify-end gap-2 pt-1">
+              <button type="button" className="btn-secondary" onClick={cerrarModal}>Cancelar</button>
+              <button type="submit" className="btn-primary" disabled={guardando}>
                 {guardando ? 'Guardando…' : modal === 'nueva' ? 'Crear categoría' : 'Guardar cambios'}
               </button>
             </div>
-          </div>
+          </form>
         </Modal>
       )}
     </div>

@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('api', {
   createCuenta: (data: any) => ipcRenderer.invoke('cuentas:create', data),
   updateCuenta: (id: number, data: any) => ipcRenderer.invoke('cuentas:update', id, data),
   archiveCuenta: (id: number) => ipcRenderer.invoke('cuentas:archive', id),
+  restoreCuenta: (id: number) => ipcRenderer.invoke('cuentas:restore', id),
 
   // Movimientos
   getMovimientos: (filtros?: any) => ipcRenderer.invoke('movimientos:getAll', filtros),
